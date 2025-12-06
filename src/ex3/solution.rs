@@ -107,11 +107,11 @@ fn get_best_greedy(batteries: &[u32], len: usize) -> Option<(usize, u32)> {
 fn deserialize_to_struct(file_name: &str) -> Result<Vec<Battery>, Box<dyn Error>> {
     let data: String = fs::read_to_string(file_name)?;
 
-    let re = regex::Regex::new(r"(\d+)").unwrap();
+    let re = regex::Regex::new(r"(\d+)")?;
     let mut instructions = Vec::new();
 
     for (_, [digit]) in re.captures_iter(data.as_str()).map(|c| c.extract::<1>()) {
-        let battery: Vec<u32> = digit.chars().map(|c| c.to_digit(10).unwrap()).collect();
+        let battery: Vec<_> = digit.chars().map(|c| c.to_digit(10).unwrap()).collect();
 
         instructions.push(Battery(battery));
     }
