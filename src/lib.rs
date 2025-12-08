@@ -14,9 +14,9 @@ pub mod ex2 {
 pub mod ex3 {
     pub mod solution;
 }
-// pub mod ex4 {
-//     pub mod solution;
-// }
+pub mod ex4 {
+    pub mod solution;
+}
 // pub mod ex5 {
 //     pub mod solution;
 // }
