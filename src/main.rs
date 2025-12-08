@@ -5,7 +5,7 @@ use aoc2025::ex3::solution::Ex3;
 use aoc2025::ex4::solution::Ex4;
 
 fn main() {
-    let result = Ex4::solve_1();
+    let result = Ex4::solve_2();
 
     println!("Result: {:?}", result);
 }

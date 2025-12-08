@@ -11,6 +11,7 @@ struct Roll {
     pos: GridPosition,
     has_roll: bool,
     matches_ex_1: RefCell<bool>,
+    removed: RefCell<bool>,
 }
 
 impl std::fmt::Display for Roll {
@@ -75,9 +76,58 @@ impl SolveSolution for Ex4 {
         Ok(sum.to_string())
     }
     fn solve_2() -> Result<String, Box<dyn Error>> {
-        let mut instructions = deserialize_to_hashmap("./src/ex4/dataset1.txt")?;
-
         let mut sum = 0;
+
+        let positions = deserialize_to_hashmap("./src/ex4/dataset2.txt")?;
+
+        let max_len = positions.len();
+
+        assert!(
+            (max_len as f32).sqrt().fract() == 0.0,
+            "Data not square-like"
+        );
+
+        loop {
+            let mut turn_total = 0;
+
+            for (pos, roll) in positions.iter().filter(|(_, v)| v.has_roll) {
+                if *roll.removed.borrow() {
+                    continue;
+                }
+
+                let neighboors = get_neighboors(pos, max_len as isize);
+
+                let total_rolls: usize = neighboors
+                    .iter()
+                    .map(|gp| {
+                        if let Some(gp) = positions.get(gp)
+                            && gp.has_roll
+                            && !*gp.removed.borrow()
+                        {
+                            1
+                        } else {
+                            0
+                        }
+                    })
+                    .sum();
+
+                if total_rolls < 4 {
+                    if let Some(val) = positions.get(pos) {
+                        val.matches_ex_1.replace(true);
+                        val.removed.replace(true);
+                    }
+
+                    turn_total += 1;
+                }
+            }
+
+            sum += turn_total;
+
+            if turn_total == 0 {
+                break;
+            }
+        }
+        // fmt_positions(&positions, max_len);
 
         Ok(sum.to_string())
     }
@@ -117,21 +167,24 @@ fn fmt_positions(positions: &HashMap<GridPosition, Roll>, max_len: usize) {
 
     let side_length = (max_len as f32).sqrt() as usize;
 
-    println!("  {}", (0..side_length).map(|x| format!("{x} ")).collect::<String>());
+    println!(
+        "  {}",
+        (0..side_length)
+            .map(|x| format!("{x} "))
+            .collect::<String>()
+    );
 
     for (y, chunk) in sorted_positions.chunks(side_length).enumerate() {
-        let line: String = chunk
-            .iter()
-            .map(|(_, roll)| {
-                let mut roll = roll.to_string();
-                roll.push(' ');
-                roll
-            })
-            .collect();
+        let line: String = chunk.iter().map(|(_, roll)| format!("{roll} ")).collect();
         println!("{} {} {}", y, line, y);
     }
 
-    println!("  {}", (0..side_length).map(|x| format!("{x} ")).collect::<String>());
+    println!(
+        "  {}",
+        (0..side_length)
+            .map(|x| format!("{x} "))
+            .collect::<String>()
+    );
 }
 
 fn deserialize_to_hashmap(
@@ -157,6 +210,7 @@ fn deserialize_to_hashmap(
                     _ => panic!("Shouldn't happen"),
                 },
                 matches_ex_1: RefCell::new(false),
+                removed: RefCell::new(false),
             };
             instructions.insert(grid_position, roll);
         }
