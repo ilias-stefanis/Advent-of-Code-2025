@@ -4,4 +4,12 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+hotpath = "0.8.0"
+rapidhash = "4.1.1"
 regex = "1.12.2"
+
+
+[features]
+hotpath = ["hotpath/hotpath"]
+hotpath-alloc = ["hotpath/hotpath-alloc"]
+hotpath-tui = ["hotpath/tui"]

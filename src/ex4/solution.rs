@@ -1,6 +1,7 @@
+use rapidhash::{HashMapExt, RapidHashMap};
+
 use crate::SolveSolution;
-use std::cell::{Cell, RefCell};
-use std::collections::HashMap;
+use std::cell::RefCell;
 use std::error::Error;
 use std::fs;
 
@@ -33,11 +34,12 @@ struct GridPosition {
 }
 
 impl SolveSolution for Ex4 {
+    #[hotpath::measure]
     fn solve_1() -> Result<String, Box<dyn Error>> {
         let mut sum = 0;
 
         // let mut positions = deserialize_to_hashmap("./src/ex4/temp.txt")?;
-        let mut positions = deserialize_to_hashmap("./src/ex4/dataset2.txt")?;
+        let positions = deserialize_to_hashmap("./src/ex4/dataset2.txt")?;
 
         let max_len = positions.len();
 
@@ -46,10 +48,13 @@ impl SolveSolution for Ex4 {
             "Data not square-like"
         );
 
-        for (pos, _) in positions.iter().filter(|(_, v)| v.has_roll) {
-            let neighboors = get_neighboors(pos, max_len as isize);
+        let mut neighboors_buffer = Vec::with_capacity(9);
 
-            let total_rolls: usize = neighboors
+        for (pos, _) in positions.iter().filter(|(_, v)| v.has_roll) {
+            neighboors_buffer.clear();
+            get_neighboors(pos, max_len as isize, &mut neighboors_buffer);
+
+            let total_rolls: usize = neighboors_buffer
                 .iter()
                 .map(|gp| {
                     if let Some(gp) = positions.get(gp)
@@ -75,6 +80,8 @@ impl SolveSolution for Ex4 {
 
         Ok(sum.to_string())
     }
+
+    #[hotpath::measure]
     fn solve_2() -> Result<String, Box<dyn Error>> {
         let mut sum = 0;
 
@@ -82,26 +89,26 @@ impl SolveSolution for Ex4 {
 
         let max_len = positions.len();
 
-        assert!(
-            (max_len as f32).sqrt().fract() == 0.0,
-            "Data not square-like"
-        );
+        // assert!(
+        //     (max_len as f32).sqrt().fract() == 0.0,
+        //     "Data not square-like"
+        // );
+
+        let mut neighboors_buffer = Vec::with_capacity(9);
 
         loop {
             let mut turn_total = 0;
 
-            for (pos, roll) in positions.iter().filter(|(_, v)| v.has_roll) {
-                if *roll.removed.borrow() {
-                    continue;
-                }
+            for (pos, roll) in positions.iter().filter(|(_, v)| !*v.removed.borrow()) {
+                neighboors_buffer.clear();
 
-                let neighboors = get_neighboors(pos, max_len as isize);
+                get_neighboors(pos, max_len as isize, &mut neighboors_buffer);
 
-                let total_rolls: usize = neighboors
+                let total_rolls: usize = neighboors_buffer
                     .iter()
                     .map(|gp| {
                         if let Some(gp) = positions.get(gp)
-                            && gp.has_roll
+                            // && gp.has_roll
                             && !*gp.removed.borrow()
                         {
                             1
@@ -133,33 +140,27 @@ impl SolveSolution for Ex4 {
     }
 }
 
-fn get_neighboors(pos: &GridPosition, max_pos: isize) -> Vec<GridPosition> {
+#[hotpath::measure]
+fn get_neighboors(pos: &GridPosition, max_pos: isize, buffer: &mut Vec<GridPosition>) {
     let GridPosition { x, y } = pos;
-    let max_pos = max_pos - 1;
+    let max_coord = max_pos - 1;
 
-    let mut vec = Vec::with_capacity(9);
+    let start_x = (*x - 1).max(0);
+    let end_x = (*x + 1).min(max_coord);
+    let start_y = (*y - 1).max(0);
+    let end_y = (*y + 1).min(max_coord);
 
-    for i in x - 1..=x + 1 {
-        for j in y - 1..=y + 1 {
+    for i in start_x..=end_x {
+        for j in start_y..=end_y {
             if i == *x && j == *y {
                 continue;
             }
-
-            if !(0..max_pos).contains(&i) {
-                continue;
-            }
-            if !(0..max_pos).contains(&j) {
-                continue;
-            }
-
-            vec.push(GridPosition { x: i, y: j });
+            buffer.push(GridPosition { x: i, y: j });
         }
     }
-
-    vec
 }
 
-fn fmt_positions(positions: &HashMap<GridPosition, Roll>, max_len: usize) {
+fn fmt_positions(positions: &RapidHashMap<GridPosition, Roll>, max_len: usize) {
     let mut sorted_positions: Vec<(&GridPosition, &Roll)> = positions.iter().collect();
     sorted_positions.sort_by(|(pos_a, _), (pos_b, _)| {
         pos_a.y.cmp(&pos_b.y).then_with(|| pos_a.x.cmp(&pos_b.x))
@@ -187,17 +188,23 @@ fn fmt_positions(positions: &HashMap<GridPosition, Roll>, max_len: usize) {
     );
 }
 
+#[hotpath::measure]
 fn deserialize_to_hashmap(
     file_name: &str,
-) -> Result<std::collections::HashMap<GridPosition, Roll>, Box<dyn Error>> {
+) -> Result<RapidHashMap<GridPosition, Roll>, Box<dyn Error>> {
     let data: String = fs::read_to_string(file_name)?;
 
     let re = regex::Regex::new(r"(\.|@)")?;
-    let mut instructions = std::collections::HashMap::new();
+    let mut instructions = RapidHashMap::with_capacity(250);
 
     for (y, line) in data.lines().enumerate() {
         for (x, symbol_match) in re.captures_iter(line).enumerate() {
             let symbol = symbol_match.get(0).unwrap().as_str();
+
+            if symbol == "." {
+                continue;
+            }
+
             let grid_position = GridPosition {
                 x: x as isize,
                 y: y as isize,
@@ -205,9 +212,9 @@ fn deserialize_to_hashmap(
             let roll = Roll {
                 pos: grid_position, // Clone the GridPosition for the Roll struct
                 has_roll: match symbol {
-                    "." => false,
+                    // "." => false,
                     "@" => true,
-                    _ => panic!("Shouldn't happen"),
+                    _ => unreachable!("shouldnt happen"),
                 },
                 matches_ex_1: RefCell::new(false),
                 removed: RefCell::new(false),
