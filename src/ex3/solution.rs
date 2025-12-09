@@ -105,7 +105,8 @@ fn get_best_greedy(batteries: &[u32], len: usize) -> Option<(usize, u32)> {
 }
 
 fn deserialize_to_struct(file_name: &str) -> Result<Vec<Battery>, Box<dyn Error>> {
-    let data: String = fs::read_to_string(file_name)?;
+    let data: String = fs::read_to_string(file_name)
+        .map_err(|err| format!("File {file_name} not found. {err}"))?;
 
     let re = regex::Regex::new(r"(\d+)")?;
     let mut instructions = Vec::new();
