@@ -8,7 +8,7 @@ use aoc2025::ex6::solution::Ex6;
 
 #[hotpath::main]
 fn main() {
-    let result = Ex6::solve_1();
+    let result = Ex6::solve_2();
 
     println!("Result: {:?}", result);
 }
