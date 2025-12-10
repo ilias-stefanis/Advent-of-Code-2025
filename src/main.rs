@@ -9,7 +9,7 @@ use aoc2025::ex7::solution::Ex7;
 
 #[hotpath::main]
 fn main() {
-    let result = Ex7::solve_1();
+    let result = Ex7::solve_2();
 
     println!("Result: {:?}", result);
 }
