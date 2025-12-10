@@ -5,10 +5,11 @@ use aoc2025::ex3::solution::Ex3;
 use aoc2025::ex4::solution::Ex4;
 use aoc2025::ex5::solution::Ex5;
 use aoc2025::ex6::solution::Ex6;
+use aoc2025::ex7::solution::Ex7;
 
 #[hotpath::main]
 fn main() {
-    let result = Ex6::solve_2();
+    let result = Ex7::solve_2();
 
     println!("Result: {:?}", result);
 }
