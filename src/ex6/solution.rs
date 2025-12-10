@@ -33,8 +33,8 @@ impl Default for NumberList {
 impl SolveSolution for Ex6 {
     #[hotpath::measure]
     fn solve_1() -> Result<String, Box<dyn Error>> {
-        let number_lists = deserialize("./src/ex6/dataset1.txt")?;
-        // dbg!(&number_lists);
+        let number_lists = deserialize("./src/ex6/dataset2.txt")?;
+
         let sum: usize = number_lists
             .iter()
             .map(|el| {
@@ -51,7 +51,60 @@ impl SolveSolution for Ex6 {
 
     #[hotpath::measure]
     fn solve_2() -> Result<String, Box<dyn Error>> {
-        let mut sum = 0;
+        let number_lists = deserialize("./src/ex6/dataset2.txt")?;
+
+        let sum: u128 = number_lists
+            .iter()
+            .map(|el| {
+                if el.operation == Operation::Add {
+                    let mut sum = 0;
+                    for i in 0..el.length {
+                        let mut digit = el
+                            .numbers
+                            .iter()
+                            .enumerate()
+                            .map(|(idx, digit)| {
+                                let picked_index = el.length - idx + 1;
+
+                                let digit = pick_digit(*digit, i).unwrap_or(0);
+                                (digit * 10_usize.pow((picked_index) as u32)) as u128
+                            })
+                            .sum::<u128>();
+
+                        while digit % 10 == 0 {
+                            digit /= 10;
+                        }
+                        sum += digit;
+                    }
+                    sum
+                } else {
+                    let mut prod = 1;
+                    for i in 0..el.length {
+                        let mut digit = el
+                            .numbers
+                            .iter()
+                            .enumerate()
+                            .map(|(idx, digit)| {
+                                let picked_index = el.length - idx + 1;
+
+                                let digit = pick_digit(*digit, i).unwrap_or(0);
+                                (digit * 10_usize.pow((picked_index) as u32)) as u128
+                            })
+                            // .inspect(|temp_prod| {
+                            //     dbg!(temp_prod);
+                            // })
+                            .sum::<u128>();
+
+                        while digit % 10 == 0 && digit != 0 {
+                            digit /= 10;
+                        }
+
+                        prod *= digit;
+                    }
+                    prod
+                }
+            })
+            .sum::<u128>();
 
         Ok(sum.to_string())
     }
@@ -71,7 +124,6 @@ fn deserialize(file_name: &str) -> Result<Vec<NumberList>, Box<dyn Error>> {
     let mut curr_op = Operation::Mult;
     let mut curr_count = 0;
     for char in last_line {
-        dbg!(&char);
         match char {
             "*" => {
                 if !is_reading {
@@ -121,45 +173,53 @@ fn deserialize(file_name: &str) -> Result<Vec<NumberList>, Box<dyn Error>> {
         operation: curr_op,
         length: curr_count,
     });
-
-    println!("{:?}", &number_lists);
 
     for line in data.lines() {
-        let mut numbers_iter = number_lists.iter_mut();
-
         if line.starts_with('*') || line.starts_with('+') {
             continue;
         }
 
-        let symbols = line.split(" ");
+        let mut slots: Vec<String> = Vec::new();
+        for token in line.split(' ') {
+            if token.is_empty() {
+                slots.push(String::new());
+            } else if token.chars().count() == 1 {
+                slots.push(token.to_string());
+            } else {
+                for ch in token.chars() {
+                    slots.push(ch.to_string());
+                }
+            }
+        }
 
-        let mut arr = numbers_iter.next().unwrap();
-        let mut length_needed = arr.length as u32;
-        let mut curr_length = 0;
-        let mut curr_number = 0;
+        let mut slot_idx = 0_usize;
 
-        for symbol in symbols {
-            dbg!(&symbol);
-            match symbol.parse::<usize>() {
-                Ok(digit) => {
-                    if count_digits(digit) == length_needed - curr_length {
-                        let digit = digit * 10_usize.pow(length_needed);
-                        arr.numbers.push(digit);
+        for arr in number_lists.iter_mut() {
+            let length_needed = arr.length;
+            let mut value: usize = 0;
+
+            for pos_in_group in 0..length_needed {
+                let s = if slot_idx < slots.len() {
+                    &slots[slot_idx]
+                } else {
+                    ""
+                };
+
+                if !s.is_empty() {
+                    if let Some(d) = s.chars().next().and_then(|c| c.to_digit(10)) {
+                        let exp = (length_needed - pos_in_group - 1) as u32;
+                        value += (d as usize) * 10_usize.pow(exp);
                     } else {
-                        curr_number = digit;
+                        return Err(format!("Non-digit character in data slot: {}", s).into());
                     }
                 }
-                Err(_) if symbol.is_empty() => {
-                    if length_needed == 0 {
-                    } else {
-                        curr_length += 1;
-                    }
-                }
-                Err(e) => return Err(format!("Bad parsing: {e}").into()),
-            };
+
+                slot_idx += 1;
+            }
+
+            arr.numbers.push(value);
         }
     }
-    // dbg!(&symbol);
 
     let number_lists = number_lists
         .into_iter()
@@ -169,101 +229,12 @@ fn deserialize(file_name: &str) -> Result<Vec<NumberList>, Box<dyn Error>> {
     Ok(number_lists)
 }
 
-#[hotpath::measure]
-fn deserialize_part2(file_name: &str) -> Result<Vec<NumberList>, Box<dyn Error>> {
-    let data: String = fs::read_to_string(file_name)?;
+fn pick_digit(num: usize, digit: usize) -> Option<usize> {
+    let power_of_10: usize = 10usize.checked_pow(digit as u32)?;
 
-    let re = regex::Regex::new(r"\d+\s?")?;
-    let mut number_lists: Vec<NumberList> = Vec::new();
-
-    let last_line = data.lines().rev().next().unwrap().split(" ");
-
-    // let mut curr_list = NumberList::default();
-    let mut is_reading = false;
-    let mut curr_op = Operation::Mult;
-    let mut curr_count = 0;
-    for char in last_line {
-        dbg!(&char);
-        match char {
-            "*" => {
-                if !is_reading {
-                    is_reading = true;
-                    curr_op = Operation::Mult;
-                    curr_count = 1;
-                    continue;
-                }
-
-                // curr_count += 1;
-                number_lists.push(NumberList {
-                    numbers: vec![],
-                    operation: curr_op,
-                    length: curr_count,
-                });
-
-                // is_reading = false;
-                curr_op = Operation::Mult;
-                curr_count = 1;
-            }
-            "+" => {
-                if !is_reading {
-                    is_reading = true;
-                    curr_op = Operation::Add;
-                    curr_count = 1;
-                    continue;
-                }
-                // curr_count += 1;
-                number_lists.push(NumberList {
-                    numbers: vec![],
-                    operation: curr_op,
-                    length: curr_count,
-                });
-
-                // is_reading = false;
-                curr_op = Operation::Add;
-                curr_count = 1;
-            }
-            ch if ch.is_empty() => {
-                curr_count += 1;
-            }
-            _ => unreachable!("arent supposed to get a number here"),
-        }
+    if num < power_of_10 {
+        return None;
     }
-    number_lists.push(NumberList {
-        numbers: vec![],
-        operation: curr_op,
-        length: curr_count,
-    });
-
-    println!("{:?}", &number_lists);
-
-    let mut columns: Vec<Vec<Option<u32>>> = vec![];
-
-    for (y, line) in data.lines().enumerate() {
-        if line.starts_with('*') || line.starts_with('+') {
-            continue;
-        }
-
-        let mut arr: Vec<Option<u32>> = Vec::with_capacity(100);
-
-        for (x, char) in line.chars().enumerate() {
-            arr.push(match char {
-                ' ' => None,
-                s => s.to_digit(10),
-            });
-        }
-
-        columns.push(arr);
-    }
-    // dbg!(&symbol);
-
-    let number_lists = number_lists
-        .into_iter()
-        .filter(|n| !matches!(n.operation, Operation::Uninit))
-        .collect();
-
-    Ok(number_lists)
-}
-
-fn count_digits(n: usize) -> u32 {
-    n.checked_ilog10().unwrap_or(0) + 1
+    let picked_digit = num / power_of_10 % 10;
+    Some(picked_digit)
 }
