@@ -40,11 +40,11 @@ impl SolveSolution for Ex7 {
 
         while current_y < max_y {
             // fmt_grid(&point_grid, max_y);
-            process_next_step(&mut point_grid, current_y);
+            part1_process_next_step(&mut point_grid, current_y);
             // println!("------------------");
             current_y += 1;
         }
-        fmt_grid(&point_grid, max_y);
+        // fmt_grid(&point_grid, max_y);
 
         let sum: usize = point_grid
             .iter()
@@ -109,7 +109,7 @@ fn deserialize(
     Ok((points, count))
 }
 
-fn process_next_step(grid: &mut RapidHashMap<(usize, usize), DiagramPoint>, current_y: usize) {
+fn part1_process_next_step(grid: &mut RapidHashMap<(usize, usize), DiagramPoint>, current_y: usize) {
     let points_to_calc: Vec<_> = grid
         .iter()
         .map(|v| v.1)
@@ -118,11 +118,11 @@ fn process_next_step(grid: &mut RapidHashMap<(usize, usize), DiagramPoint>, curr
             let matches = matches!(el.ptype, DiagramPointType::Start | DiagramPointType::Line);
             is_correct_height && matches
         })
-        .inspect(|el| {
+        // .inspect(|el| {
             // if 9 <= current_y && current_y < 11 {
             //     dbg!(&el);
             // }
-        })
+        // })
         .cloned()
         .collect();
 
@@ -140,9 +140,7 @@ fn process_next_step(grid: &mut RapidHashMap<(usize, usize), DiagramPoint>, curr
                 ..
             }) => {
                 let left = (new_coords.0 - 1, new_coords.1);
-                let right = (new_coords.0 + 1, new_coords.1);
-                if current_y == 9  {dbg!(&left, &right);}
-
+                let right = (new_coords.0 + 1, new_coords.1);      
 
                 grid.entry(left).or_insert(DiagramPoint {
                     x: left.0,

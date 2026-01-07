@@ -26,9 +26,9 @@ pub mod ex6 {
 pub mod ex7 {
     pub mod solution;
 }
-// pub mod ex8 {
-//     pub mod solution;
-// }
+pub mod ex8 {
+    pub mod solution;
+}
 // pub mod ex9 {
 //     pub mod solution;
 // }
