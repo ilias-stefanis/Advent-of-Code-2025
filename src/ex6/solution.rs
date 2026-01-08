@@ -1,7 +1,5 @@
 use crate::SolveSolution;
-use core::num;
 use std::error::Error;
-use std::ops::RangeInclusive;
 use std::{fs, vec};
 
 pub struct Ex6;

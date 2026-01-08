@@ -1,9 +1,7 @@
 use rapidhash::{HashMapExt, RapidHashMap};
 
 use crate::SolveSolution;
-use core::num;
 use std::error::Error;
-use std::ops::RangeInclusive;
 use std::{fs, vec};
 
 pub struct Ex7;
@@ -109,7 +107,10 @@ fn deserialize(
     Ok((points, count))
 }
 
-fn part1_process_next_step(grid: &mut RapidHashMap<(usize, usize), DiagramPoint>, current_y: usize) {
+fn part1_process_next_step(
+    grid: &mut RapidHashMap<(usize, usize), DiagramPoint>,
+    current_y: usize,
+) {
     let points_to_calc: Vec<_> = grid
         .iter()
         .map(|v| v.1)
@@ -119,9 +120,9 @@ fn part1_process_next_step(grid: &mut RapidHashMap<(usize, usize), DiagramPoint>
             is_correct_height && matches
         })
         // .inspect(|el| {
-            // if 9 <= current_y && current_y < 11 {
-            //     dbg!(&el);
-            // }
+        // if 9 <= current_y && current_y < 11 {
+        //     dbg!(&el);
+        // }
         // })
         .cloned()
         .collect();
@@ -140,7 +141,7 @@ fn part1_process_next_step(grid: &mut RapidHashMap<(usize, usize), DiagramPoint>
                 ..
             }) => {
                 let left = (new_coords.0 - 1, new_coords.1);
-                let right = (new_coords.0 + 1, new_coords.1);      
+                let right = (new_coords.0 + 1, new_coords.1);
 
                 grid.entry(left).or_insert(DiagramPoint {
                     x: left.0,
