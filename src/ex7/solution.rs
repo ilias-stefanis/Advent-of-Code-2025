@@ -25,14 +25,11 @@ impl SolveSolution for Ex7 {
     fn solve_1() -> Result<String, Box<dyn Error>> {
         let (mut point_grid, max_y) = deserialize("./src/ex7/dataset2.txt")?;
 
-        let (_start_x, start_y) = point_grid
+        let (_start_x, start_y) = *point_grid
             .iter()
             .find(|v| v.1.ptype == DiagramPointType::Start)
             .unwrap()
-            .0
-            .clone();
-
-        // dbg!(&point_grid);
+            .0;
 
         let mut current_y = start_y;
 
@@ -68,11 +65,38 @@ impl SolveSolution for Ex7 {
 
     #[hotpath::measure]
     fn solve_2() -> Result<String, Box<dyn Error>> {
-        let point_grid = deserialize("./src/ex7/dataset1.txt")?;
+        let (point_grid, _max_y) = deserialize("./src/ex7/dataset2.txt")?;
 
-        let sum: u128 = 0;
+        let x_count = point_grid.iter().max_by_key(|a| a.1.x).unwrap().1.x + 2;
 
-        Ok(sum.to_string())
+        let mut points_buffer: Vec<_> = point_grid.iter().collect();
+        points_buffer.sort_by(|a, b| a.1.y.cmp(&b.1.y).reverse().then(a.1.x.cmp(&b.1.x)));
+
+        let mut timelines = vec![1_usize; x_count];
+
+        for row in points_buffer.chunk_by(|a, b| a.1.y == b.1.y) {
+            for (_, point) in row {
+                if let DiagramPoint {
+                    x,
+                    ptype: DiagramPointType::Splitter,
+                    ..
+                } = point
+                {
+                    let x = *x;
+                    timelines[x] = timelines[x - 1] + timelines[x + 1];
+                }
+            }
+        }
+
+        let start_x = points_buffer
+            .iter()
+            .rev()
+            .find(|v| v.1.ptype == DiagramPointType::Start)
+            .unwrap()
+            .1
+            .x;
+
+        Ok(timelines[start_x].to_string())
     }
 }
 
@@ -119,18 +143,8 @@ fn part1_process_next_step(
             let matches = matches!(el.ptype, DiagramPointType::Start | DiagramPointType::Line);
             is_correct_height && matches
         })
-        // .inspect(|el| {
-        // if 9 <= current_y && current_y < 11 {
-        //     dbg!(&el);
-        // }
-        // })
         .cloned()
         .collect();
-
-    // if 9<= current_y && current_y <11{
-
-    //     dbg!(&points_to_calc);
-    // }
 
     for el in &points_to_calc {
         let new_coords = (el.x, el.y + 1);
