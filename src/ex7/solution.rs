@@ -1,9 +1,7 @@
 use rapidhash::{HashMapExt, RapidHashMap};
 
 use crate::SolveSolution;
-use core::num;
 use std::error::Error;
-use std::ops::RangeInclusive;
 use std::{fs, vec};
 
 pub struct Ex7;
@@ -133,7 +131,10 @@ fn deserialize(
     Ok((points, count))
 }
 
-fn part1_process_next_step(grid: &mut RapidHashMap<(usize, usize), DiagramPoint>, current_y: usize) {
+fn part1_process_next_step(
+    grid: &mut RapidHashMap<(usize, usize), DiagramPoint>,
+    current_y: usize,
+) {
     let points_to_calc: Vec<_> = grid
         .iter()
         .map(|v| v.1)

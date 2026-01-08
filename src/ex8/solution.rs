@@ -1,11 +1,9 @@
 use rapidhash::{HashMapExt, HashSetExt, RapidHashMap, RapidHashSet};
 
 use crate::SolveSolution;
-use core::num;
 use std::collections::VecDeque;
 use std::error::Error;
 use std::fmt::Debug;
-use std::ops::RangeInclusive;
 use std::{fs, vec};
 
 pub struct Ex8;
@@ -357,23 +355,58 @@ impl Debug for Subgraph {
     }
 }
 
-fn get_connected_edges(haystack_edge: &Edge, edges: &RapidHashMap<EdgeKey, Edge>) -> Vec<EdgeKey> {
-    let mut connected_edges = vec![];
+struct DisjointSet {
+    parent: Vec<usize>,
+}
 
-    for edge in edges.values() {
-        if edge == haystack_edge {
-            continue;
-        }
-
-        if edge.a == haystack_edge.a
-            || edge.a == haystack_edge.b
-            || edge.b == haystack_edge.a
-            || edge.b == haystack_edge.b
-        {
-            connected_edges.push((edge.a, edge.b));
+impl DisjointSet {
+    fn new(size: usize) -> Self {
+        // Initially, every node is its own parent (isolated)
+        Self {
+            parent: (0..size).collect(),
         }
     }
 
-    connected_edges
+    // Find the representative ID of the set containing 'i'
+    // Uses path compression for O(1) average time
+    fn find(&mut self, i: usize) -> usize {
+        if self.parent[i] == i {
+            i
+        } else {
+            let root = self.find(self.parent[i]);
+            self.parent[i] = root; // Path compression
+            root
+        }
+    }
+
+    // Returns true if merging was successful (no cycle)
+    // Returns false if they were already connected (cycle detected)
+    fn union(&mut self, i: usize, j: usize) -> bool {
+        let root_i = self.find(i);
+        let root_j = self.find(j);
+
+        if root_i != root_j {
+            self.parent[root_i] = root_j; // Merge sets
+            true // Edge accepted
+        } else {
+            false // Cycle detected!
+        }
+    }
 }
 
+// // --- Usage Example ---
+// fn filter_acyclic_edges(num_nodes: usize, edges: &[Edge]) -> Vec<Edge> {
+//     let mut dsu = DisjointSet::new(num_nodes);
+//     let mut safe_edges = Vec::new();
+
+//     for edge in edges {
+//         // dsu.union returns false if nodes are already connected
+//         if dsu.union(edge.a, edge.b) {
+//             safe_edges.push(edge.clone());
+//         } else {
+//             println!("Skipping edge {:?} because it creates a cycle.", edge);
+//         }
+//     }
+
+//     safe_edges
+// }
