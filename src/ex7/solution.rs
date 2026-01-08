@@ -37,11 +37,11 @@ impl SolveSolution for Ex7 {
 
         while current_y < max_y {
             // fmt_grid(&point_grid, max_y);
-            process_next_step(&mut point_grid, current_y);
+            part1_process_next_step(&mut point_grid, current_y);
             // println!("------------------");
             current_y += 1;
         }
-        fmt_grid(&point_grid, max_y);
+        // fmt_grid(&point_grid, max_y);
 
         let sum: usize = point_grid
             .iter()
@@ -133,7 +133,7 @@ fn deserialize(
     Ok((points, count))
 }
 
-fn process_next_step(grid: &mut RapidHashMap<(usize, usize), DiagramPoint>, current_y: usize) {
+fn part1_process_next_step(grid: &mut RapidHashMap<(usize, usize), DiagramPoint>, current_y: usize) {
     let points_to_calc: Vec<_> = grid
         .iter()
         .map(|v| v.1)
